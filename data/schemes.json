@@ -1,0 +1,101 @@
+[
+  {
+    "id": "pm-kisan",
+    "name": "PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)",
+    "category": "Income Support",
+    "benefit": "Rs. 6,000 per year, paid in three equal installments directly to bank accounts.",
+    "eligibility_summary": "Landholding farmer families across India, subject to income-tax-payer and government-employee exclusions.",
+    "min_land_acres": null,
+    "max_land_acres": null,
+    "states": ["All India"],
+    "official_site": "pmkisan.gov.in"
+  },
+  {
+    "id": "pmfby",
+    "name": "PMFBY (Pradhan Mantri Fasal Bima Yojana)",
+    "category": "Crop Insurance",
+    "benefit": "Insurance against crop loss from natural calamities, pests, and disease. Farmer premium capped at 2% (Kharif), 1.5% (Rabi), 5% (commercial/horticulture crops).",
+    "eligibility_summary": "All farmers growing notified crops in notified areas, both loanee and non-loanee.",
+    "min_land_acres": null,
+    "max_land_acres": null,
+    "states": ["All India"],
+    "official_site": "pmfby.gov.in"
+  },
+  {
+    "id": "kcc",
+    "name": "Kisan Credit Card (KCC)",
+    "category": "Credit",
+    "benefit": "Short-term credit for crop production, farm equipment, and allied activities at subsidized interest (effectively ~4% per annum with prompt repayment incentive).",
+    "eligibility_summary": "Farmers, tenant farmers, sharecroppers, and SHGs/JLGs of farmers.",
+    "min_land_acres": null,
+    "max_land_acres": null,
+    "states": ["All India"],
+    "official_site": null
+  },
+  {
+    "id": "soil-health-card",
+    "name": "Soil Health Card Scheme",
+    "category": "Advisory",
+    "benefit": "Free soil testing every 2 years with crop-wise nutrient and fertilizer recommendations.",
+    "eligibility_summary": "All farmers; apply through the local agriculture department or Krishi Vigyan Kendra.",
+    "min_land_acres": null,
+    "max_land_acres": null,
+    "states": ["All India"],
+    "official_site": "soilhealth.dac.gov.in"
+  },
+  {
+    "id": "pm-kusum",
+    "name": "PM-KUSUM (Solar Pumps & Grid-Connected Solar)",
+    "category": "Subsidy",
+    "benefit": "Subsidy (typically 60-90% combined central+state) on solar irrigation pumps and support for setting up small grid-connected solar power plants on farm land.",
+    "eligibility_summary": "Individual farmers, farmer groups/cooperatives, and panchayats with access to land for solar installation.",
+    "min_land_acres": null,
+    "max_land_acres": null,
+    "states": ["All India"],
+    "official_site": "pmkusum.mnre.gov.in"
+  },
+  {
+    "id": "e-nam",
+    "name": "e-NAM (National Agriculture Market)",
+    "category": "Market Access",
+    "benefit": "Online trading platform linking mandis nationwide for transparent price discovery and easier direct sale.",
+    "eligibility_summary": "Farmers selling produce through participating APMC mandis.",
+    "min_land_acres": null,
+    "max_land_acres": null,
+    "states": ["All India"],
+    "official_site": "enam.gov.in"
+  },
+  {
+    "id": "pmksy",
+    "name": "PMKSY (Pradhan Mantri Krishi Sinchayee Yojana)",
+    "category": "Irrigation",
+    "benefit": "Support for micro-irrigation (drip/sprinkler) and watershed development to expand irrigated area and improve water-use efficiency.",
+    "eligibility_summary": "Farmers investing in micro-irrigation infrastructure, subsidy varies by state and land holding category.",
+    "min_land_acres": null,
+    "max_land_acres": null,
+    "states": ["All India"],
+    "official_site": "pmksy.gov.in"
+  },
+  {
+    "id": "aif",
+    "name": "Agriculture Infrastructure Fund (AIF)",
+    "category": "Infrastructure Credit",
+    "benefit": "Interest-subvention loans (3% p.a. subvention, up to Rs. 2 crore) for post-harvest infrastructure - warehouses, cold storage, processing units.",
+    "eligibility_summary": "Farmers, FPOs, agri-entrepreneurs, and cooperatives setting up post-harvest infrastructure.",
+    "min_land_acres": null,
+    "max_land_acres": null,
+    "states": ["All India"],
+    "official_site": "agriinfra.dac.gov.in"
+  },
+  {
+    "id": "nfsm",
+    "name": "National Food Security Mission (NFSM)",
+    "category": "Production Support",
+    "benefit": "Subsidized seed, farm machinery, and cropping inputs to boost rice, wheat, pulses, coarse cereal, and oilseed production in target districts.",
+    "eligibility_summary": "Farmers in NFSM-notified districts growing the mission's target crops.",
+    "min_land_acres": null,
+    "max_land_acres": null,
+    "states": ["All India"],
+    "official_site": "nfsm.gov.in"
+  }
+]
