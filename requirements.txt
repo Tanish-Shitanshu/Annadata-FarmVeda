@@ -1,0 +1,18 @@
+# Core app framework
+streamlit==1.41.0
+
+# Weather + geocoding HTTP client (Open-Meteo, no API key required)
+requests==2.32.3
+
+# Multi-language UI support (English, Hindi, and other Indian languages)
+deep-translator==1.11.4
+
+# Crop health scanner image processing
+Pillow==11.0.0
+numpy==2.1.3
+
+# Fasal Guru AI chat (Gemini API client) - optional, only needed if GEMINI_API_KEY is set
+google-generativeai==0.8.3
+
+# Data handling
+pandas==2.2.3
