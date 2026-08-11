@@ -1,0 +1,21 @@
+crop,season,soil_types,min_temp_c,max_temp_c,min_rainfall_mm,max_rainfall_mm,duration_days
+Rice (Paddy),Kharif,"Clayey,Alluvial",20,37,1000,2000,135
+Wheat,Rabi,"Alluvial,Loamy",10,25,400,800,135
+Maize,Kharif,"Alluvial,Loamy,Sandy Loam",18,32,500,1000,105
+Cotton,Kharif,"Black (Regur),Alluvial",21,30,500,1000,165
+Sugarcane,Year-round,"Alluvial,Loamy",20,35,1000,1500,335
+Soybean,Kharif,"Black (Regur),Loamy",20,30,600,1000,105
+Groundnut,Kharif,"Sandy Loam,Red",20,30,500,1000,115
+Mustard,Rabi,"Alluvial,Loamy",10,25,300,400,125
+Chickpea (Gram),Rabi,"Black (Regur),Alluvial",10,25,300,400,105
+Pigeon Pea (Tur/Arhar),Kharif,"Black (Regur),Red,Loamy",20,30,600,1000,165
+Potato,Rabi,"Alluvial,Sandy Loam",15,25,500,700,105
+Tomato,Kharif,"Loamy,Sandy Loam",20,27,600,1000,105
+Onion,Rabi,"Loamy,Alluvial",13,25,650,750,135
+Sorghum (Jowar),Kharif,"Black (Regur),Red",25,32,400,750,115
+Pearl Millet (Bajra),Kharif,"Sandy,Sandy Loam",25,35,250,500,82
+Barley,Rabi,"Alluvial,Loamy",10,22,300,450,135
+Sunflower,Kharif,"Black (Regur),Alluvial,Red",20,27,500,750,100
+Jute,Kharif,"Alluvial",24,37,1000,1500,110
+Banana,Year-round,"Alluvial,Loamy",15,35,1000,2000,335
+Chili,Kharif,"Loamy,Red,Black (Regur)",20,30,600,1250,165
