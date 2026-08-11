@@ -1,0 +1,89 @@
+[
+  {
+    "title": "Crop Rotation Basics",
+    "category": "Soil & Sustainability",
+    "summary": "Rotating between crop families (e.g. cereal -> legume -> oilseed) breaks pest and disease cycles that build up when the same crop is grown repeatedly, and legumes like gram or moong naturally replenish soil nitrogen for the next crop.",
+    "tips": [
+      "Follow a nitrogen-hungry cereal (wheat, rice) with a nitrogen-fixing legume (chickpea, moong, soybean).",
+      "Avoid repeating crops from the same family (e.g. two Brassica crops back to back) in consecutive seasons.",
+      "Deep-rooted and shallow-rooted crops in rotation improve soil structure at different depths."
+    ]
+  },
+  {
+    "title": "Integrated Pest Management (IPM)",
+    "category": "Pest & Disease Control",
+    "summary": "IPM combines cultural, biological, and chemical controls to manage pests with minimum chemical use, reducing cost and resistance build-up.",
+    "tips": [
+      "Scout fields weekly and act only when pest counts cross an economic threshold, not on sight of a single pest.",
+      "Encourage natural predators (ladybird beetles, spiders) by avoiding broad-spectrum insecticide overuse.",
+      "Use pheromone traps to monitor and mass-trap moths before resorting to spraying.",
+      "Rotate chemical classes if spraying is necessary, to slow resistance development."
+    ]
+  },
+  {
+    "title": "Drip Irrigation Setup",
+    "category": "Water Management",
+    "summary": "Drip irrigation delivers water directly to the root zone, cutting water use by 30-50% compared to flood irrigation while often improving yield through consistent moisture.",
+    "tips": [
+      "Filter water well before it enters drip lines - clogged emitters are the most common failure point.",
+      "Match emitter spacing to row spacing and crop root spread.",
+      "Combine with mulching to further reduce evaporation loss.",
+      "Government subsidy is often available under PMKSY - see Yojana Sathi for details."
+    ]
+  },
+  {
+    "title": "Soil Health & Organic Matter",
+    "category": "Soil & Sustainability",
+    "summary": "Organic matter improves water retention, nutrient availability, and soil structure. Most Indian agricultural soils are low in organic carbon after decades of intensive cropping.",
+    "tips": [
+      "Incorporate crop residue instead of burning it - stubble burning destroys organic matter and pollutes air.",
+      "Apply farmyard manure or compost between seasons to rebuild organic carbon.",
+      "Get a Soil Health Card (free, every 2 years) to track nutrient status over time - see Yojana Sathi.",
+      "Green manuring with dhaincha or sunhemp before a main crop adds nitrogen and organic matter cheaply."
+    ]
+  },
+  {
+    "title": "Post-Harvest Storage Best Practices",
+    "category": "Post-Harvest",
+    "summary": "A large share of crop loss in India happens after harvest, from moisture, pests, and poor storage - not in the field.",
+    "tips": [
+      "Dry grain to safe moisture content (usually below 12-14%) before storage to prevent fungal growth.",
+      "Store in clean, dry, pest-proof containers or bags, off the ground.",
+      "Use hermetic (airtight) storage bags for small quantities - they suffocate pests without chemicals.",
+      "Consider warehouse/cold storage financing under the Agriculture Infrastructure Fund - see Yojana Sathi."
+    ]
+  },
+  {
+    "title": "Understanding Fertilizer Ratios (NPK)",
+    "category": "Nutrition",
+    "summary": "Nitrogen (N), Phosphorus (P), and Potassium (K) serve different roles: N drives leafy growth, P supports root and flower development, K improves overall plant vigor and disease resistance.",
+    "tips": [
+      "Over-applying nitrogen without P and K can produce lush leaves but weak yield and lodging-prone stems.",
+      "Split nitrogen application (basal + top-dressing) rather than one large dose - reduces loss and improves uptake.",
+      "A Soil Health Card recommendation is more reliable than a blanket fertilizer ratio for your specific field.",
+      "Micronutrient deficiency (zinc, boron) is increasingly common in intensively cropped soil - watch for yellowing that doesn't match a typical N deficiency pattern."
+    ]
+  },
+  {
+    "title": "Climate-Resilient Farming Practices",
+    "category": "Climate Adaptation",
+    "summary": "With increasingly erratic rainfall and more frequent heat extremes, diversifying risk across practices matters more than optimizing for an average year.",
+    "tips": [
+      "Choose short-duration or drought-tolerant crop varieties in areas with unreliable late-season rain.",
+      "Mulch to reduce soil temperature extremes and moisture loss during heat spells.",
+      "Diversify crops rather than relying on a single crop - reduces total-loss risk from any one weather event.",
+      "Check the Climate Risk & Yield page before major input investment decisions in a risky season."
+    ]
+  },
+  {
+    "title": "Seed Selection & Treatment",
+    "category": "Sowing",
+    "summary": "Seed quality and pre-sowing treatment strongly influence germination rate and early disease resistance.",
+    "tips": [
+      "Use certified seed from a reliable source rather than saved seed of unknown disease status where possible.",
+      "Treat seed with a recommended fungicide or bio-agent (e.g. Trichoderma) before sowing to reduce seedling disease.",
+      "Do a germination test on a small sample before large-scale sowing to confirm viability.",
+      "Time sowing using the Weather Advisory page's sowing window guidance to avoid waterlogging or drought stress at germination."
+    ]
+  }
+]
