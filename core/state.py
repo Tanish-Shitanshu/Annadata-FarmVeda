@@ -44,6 +44,7 @@ def sign_out() -> None:
     st.session_state.account_id = None
     st.session_state.farmer_id = None
     st.session_state.cart = {}
+    st.session_state["_go_home"] = True      # handled on the rerun: signing out lands on the Home page
 
 
 def current_account() -> auth.Account | None:
@@ -52,6 +53,11 @@ def current_account() -> auth.Account | None:
 
 
 def _render_account_box() -> None:
+    if st.session_state.pop("_go_home", False):
+        try:
+            st.switch_page("app.py")
+        except st.errors.StreamlitAPIException:
+            pass                              # already on Home (or running outside a multipage app)
     account = current_account()
     with st.sidebar:
         if account is None:

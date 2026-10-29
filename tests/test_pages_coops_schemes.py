@@ -40,9 +40,11 @@ def fresh(tmp_db):
 def test_create_coop_shows_invite_code_to_admin():
     acct, f = new_farmer()
     at = open_as(12, acct).run()
+    at.radio(key="coop_section").set_value("new").run()
     at.text_input(key="cc_name").set_value("Khanna Growers")
     btn(at, "Create").click(); at.run()
     assert not at.exception and not at.error
+    at.radio(key="coop_section").set_value("mine").run()
     [c] = coop.my_coops(f["id"])
     assert c["name"] == "Khanna Growers" and c["my_role"] == "admin"
     code = coop.get_coop(c["id"], f["id"])["invite_code"]
@@ -52,6 +54,7 @@ def test_create_coop_shows_invite_code_to_admin():
 def test_create_coop_requires_name():
     acct, f = new_farmer()
     at = open_as(12, acct).run()
+    at.radio(key="coop_section").set_value("new").run()
     btn(at, "Create").click(); at.run()
     assert at.error and coop.my_coops(f["id"]) == []
 
@@ -62,6 +65,7 @@ def test_join_with_invite_code_and_bad_code():
     cid = coop.create_coop(a["id"], "Group")
     code = coop.get_coop(cid, a["id"])["invite_code"]
     at = open_as(12, b_acct).run()
+    at.radio(key="coop_section").set_value("new").run()
     at.text_input(key="jc_code").set_value("WRONGCODE")
     btn(at, "Join").click(); at.run()
     assert at.error and not coop.is_member(b["id"], cid)
@@ -107,6 +111,7 @@ def test_marketplace_bulk_order_splits_across_farmers_through_the_page():
     key = coop.pooled_stock(cid)[0].key
     at = open_as(10, buyer)
     at.session_state["coop_view"] = cid
+    at.session_state["market_section"] = "coops"
     at.run()
     at.number_input(key=f"pool_qty_{key}").set_value(45.0)
     at.text_input(key=f"pool_phone_{key}").set_value(PHONE)

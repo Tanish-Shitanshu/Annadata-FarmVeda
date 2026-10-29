@@ -94,26 +94,27 @@ if adv:
             st.markdown(f"💨 {d.wind_speed_max_kmh:.0f} km/h")
 
     st.divider()
-    tabs = st.tabs([
-        t("🌱 Sowing", lang), t("💧 Irrigation", lang),
-        t("🧪 Spraying", lang), t("🌾 Harvest", lang),
-    ])
+    # A radio rather than st.tabs: accepting a reminder reruns the page, and the chosen advisory must stay open.
+    ADVISORIES = {"sowing": t("🌱 Sowing", lang), "irrigation": t("💧 Irrigation", lang),
+                  "spraying": t("🧪 Spraying", lang), "harvest": t("🌾 Harvest", lang)}
+    section = st.radio("advisory", list(ADVISORIES), format_func=ADVISORIES.get, horizontal=True,
+                       key="wx_section", label_visibility="collapsed")
 
-    with tabs[0]:
+    if section == "sowing":
         a = sowing_advisory(forecast)
         st.metric(t("Verdict", lang), t(a["verdict"], lang))
         st.write(t(a["reason"], lang))
         render_suggestion("sowing", a["verdict"], a["reason"], place_label,
                           suggest_reminder("sowing", a), adv_day)
 
-    with tabs[1]:
+    if section == "irrigation":
         a = irrigation_advisory(forecast)
         st.metric(t("Verdict", lang), t(a["verdict"], lang))
         st.write(t(a["reason"], lang))
         render_suggestion("irrigation", a["verdict"], a["reason"], place_label,
                           suggest_reminder("irrigation", a), adv_day)
 
-    with tabs[2]:
+    if section == "spraying":
         spray_days = spraying_advisory(forecast)
         for day_advisory in spray_days:
             icon = "✅" if day_advisory["verdict"] == "Suitable" else "⛔"
@@ -126,7 +127,7 @@ if adv:
             render_suggestion("spraying", "Suitable", f"First suitable day: {spray.due_date:%a %d %b}",
                               place_label, spray, adv_day)
 
-    with tabs[3]:
+    if section == "harvest":
         a = harvest_advisory(forecast)
         st.metric(t("Verdict", lang), t(a["verdict"], lang))
         st.write(t(a["reason"], lang))

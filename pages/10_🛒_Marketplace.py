@@ -91,11 +91,15 @@ if st.session_state.last_orders:
     st.session_state.last_orders = None
 
 cart_count = len(st.session_state.cart)
-browse_tab, coops_tab, cart_tab = st.tabs([t("Browse", lang), t("Cooperatives", lang),
-                                           "🧺 " + t("Cart", lang) + f" ({cart_count})"])
+# A radio (not st.tabs): its choice lives in session_state, so clicking a button inside a section never
+# bounces the visitor back to the first tab.
+SECTION_LABELS = {"browse": t("Browse", lang), "coops": t("Cooperatives", lang),
+                  "cart": "🧺 " + t("Cart", lang) + f" ({cart_count})"}
+section = st.radio("section", list(SECTION_LABELS), format_func=SECTION_LABELS.get, horizontal=True,
+                   key="market_section", label_visibility="collapsed")
 
 # ── Browse ──────────────────────────────────────────────────────────────────
-with browse_tab:
+if section == "browse":
     shop_id = st.session_state.shop_view
     if shop_id is not None:
         profile = market.farmer_public_profile(shop_id)
@@ -138,7 +142,7 @@ with browse_tab:
                     render_listing(row, "browse")
 
 # ── Cooperatives ────────────────────────────────────────────────────────────
-with coops_tab:
+if section == "coops":
     coop_id = st.session_state.coop_view
     if coop_id is None:
         coops = coop.list_coops()
@@ -195,7 +199,7 @@ with coops_tab:
                         c2.caption(t("Sign in with a consumer account to order.", lang))
 
 # ── Cart ────────────────────────────────────────────────────────────────────
-with cart_tab:
+if section == "cart":
     if not st.session_state.cart:
         st.info(t("Your cart is empty.", lang))
     else:

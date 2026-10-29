@@ -16,7 +16,9 @@ st.caption(t("Pool your produce with other farmers under one name. Buyers see th
              "registered cooperative society or FPO.", lang))
 
 mine = coop.my_coops(fid)
-tab_mine, tab_new = st.tabs(["🤝 " + t("My cooperatives", lang), "➕ " + t("Create or join", lang)])
+SECTION_LABELS = {"mine": "🤝 " + t("My cooperatives", lang), "new": "➕ " + t("Create or join", lang)}
+section = st.radio("section", list(SECTION_LABELS), format_func=SECTION_LABELS.get, horizontal=True,
+                   key="coop_section", label_visibility="collapsed")
 
 
 def attempt(action, *args, success: str = "") -> None:
@@ -29,7 +31,7 @@ def attempt(action, *args, success: str = "") -> None:
         st.error(t(str(exc), lang))
 
 
-with tab_mine:
+if section == "mine":
     if not mine:
         st.info(t("You're not in a cooperative yet. Create one, or join with an invite code from its admin.", lang))
     for c in mine:
@@ -72,7 +74,7 @@ with tab_mine:
             if st.button(t("Leave this cooperative", lang), key=f"leave_{cid}"):
                 attempt(coop.leave_coop, fid, cid)
 
-with tab_new:
+if section == "new":
     c1, c2 = st.columns(2)
     with c1:
         st.subheader(t("Create a cooperative", lang))

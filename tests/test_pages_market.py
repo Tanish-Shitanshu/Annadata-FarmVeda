@@ -44,6 +44,12 @@ def shop(tmp_db):
     return type("S", (), dict(fa=fa, ff=ff, buyer=buyer, wheat=wheat))
 
 
+def show(at, key, value):
+    """Switch a section radio (Cart, Add a listing, ...) and rerun."""
+    at.radio(key=key).set_value(value).run()
+    return at
+
+
 def fill_checkout(at, fulfilment="pickup", phone=PHONE, address=""):
     at.radio(key="co_ful").set_value(fulfilment)
     at.text_area(key="co_address").set_value(address)
@@ -65,6 +71,7 @@ def test_add_to_cart_then_checkout_as_consumer(shop):
     btn(at, key=f"browse_add_{shop.wheat}").click()
     at.run()
     assert at.session_state["cart"] == {shop.wheat: 4.0}
+    show(at, "market_section", "cart")
     fill_checkout(at)
     [b for b in at.button if b.label == "Place order"][0].click()
     at.run()
@@ -86,6 +93,7 @@ def test_adding_twice_accumulates_quantity(shop):
 def test_signed_out_user_can_fill_cart_but_not_order(shop):
     at = open_as(10).run()
     btn(at, key=f"browse_add_{shop.wheat}").click(); at.run()
+    show(at, "market_section", "cart")
     assert any("sign in" in i.value.lower() for i in at.info)
     assert not any(b.label == "Place order" for b in at.button)
 
@@ -93,6 +101,7 @@ def test_signed_out_user_can_fill_cart_but_not_order(shop):
 def test_farmer_cannot_place_orders(shop):
     at = open_as(10, shop.fa).run()
     btn(at, key=f"browse_add_{shop.wheat}").click(); at.run()
+    show(at, "market_section", "cart")
     assert any("can't place orders" in i.value for i in at.info)
     assert not any(b.label == "Place order" for b in at.button)
 
@@ -100,6 +109,7 @@ def test_farmer_cannot_place_orders(shop):
 def test_delivery_requires_address_and_leaves_stock_untouched_on_failure(shop):
     at = open_as(10, shop.buyer).run()
     btn(at, key=f"browse_add_{shop.wheat}").click(); at.run()
+    show(at, "market_section", "cart")
     fill_checkout(at, "delivery", address="")
     [b for b in at.button if b.label == "Place order"][0].click(); at.run()
     assert at.error and market.list_orders_for_consumer(shop.buyer.id) == []
@@ -110,6 +120,7 @@ def test_cart_ignores_tampered_session_price_or_stock(shop):
     """Whatever quantity the session holds, checkout re-checks stock in the database."""
     at = open_as(10, shop.buyer)
     at.session_state["cart"] = {shop.wheat: 5000.0}
+    at.session_state["market_section"] = "cart"
     at.run()
     assert at.warning                                              # the cart shows the problem
     fill_checkout(at)
@@ -121,6 +132,7 @@ def test_cart_ignores_tampered_session_price_or_stock(shop):
 def test_remove_from_cart(shop):
     at = open_as(10, shop.buyer)
     at.session_state["cart"] = {shop.wheat: 2.0}
+    at.session_state["market_section"] = "cart"
     at.run()
     btn(at, key=f"rm_{shop.wheat}").click(); at.run()
     assert at.session_state["cart"] == {}
@@ -196,7 +208,7 @@ def test_my_shop_message_flow_and_escaping(shop):
 
 def test_my_shop_create_listing():
     acct, f = new_farmer()
-    at = open_as(11, acct).run()
+    at = show(open_as(11, acct).run(), "shop_section", "add")
     at.text_input(key="nl_title").set_value("Raw Milk")
     at.selectbox(key="nl_category").select("Dairy")
     at.selectbox(key="nl_unit").select("litre")
@@ -210,7 +222,7 @@ def test_my_shop_create_listing():
 
 def test_my_shop_create_listing_validation_message():
     acct, f = new_farmer()
-    at = open_as(11, acct).run()
+    at = show(open_as(11, acct).run(), "shop_section", "add")
     at.text_input(key="nl_title").set_value("Free Stuff")
     at.number_input(key="nl_price").set_value(0.0)
     at.number_input(key="nl_qty").set_value(5.0)
@@ -219,7 +231,7 @@ def test_my_shop_create_listing_validation_message():
 
 
 def test_my_shop_edit_listing_pauses_it(shop):
-    at = open_as(11, shop.fa).run()
+    at = show(open_as(11, shop.fa).run(), "shop_section", "listings")
     at.selectbox(key=f"e_status_{shop.wheat}").select("paused")
     at.number_input(key=f"e_price_{shop.wheat}").set_value(35.0)
     [b for b in at.button if b.label == "Save changes"][0].click(); at.run()
@@ -273,6 +285,7 @@ def test_order_placed_message_is_visible_outside_the_cart_tab(shop):
     """After checkout Streamlit returns to the first tab, so the confirmation must not live inside the Cart tab."""
     at = open_as(10, shop.buyer).run()
     btn(at, key=f"browse_add_{shop.wheat}").click(); at.run()
+    show(at, "market_section", "cart")
     fill_checkout(at)
     [b for b in at.button if b.label == "Place order"][0].click(); at.run()
     assert any("Order placed" in s.value for s in at.success)

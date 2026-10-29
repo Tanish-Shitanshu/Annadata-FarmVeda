@@ -15,9 +15,10 @@ st.caption(t("List what you grow, set your own price, and confirm each order you
 
 my_coops = coop.my_coops(farmer["id"])
 awaiting = market.count_orders_awaiting_farmer(farmer["id"])
-orders_tab, listings_tab, add_tab = st.tabs([
-    "📥 " + t("Orders", lang) + (f" ({awaiting} new)" if awaiting else ""),
-    "📦 " + t("My listings", lang), "➕ " + t("Add a listing", lang)])
+SECTION_LABELS = {"orders": "📥 " + t("Orders", lang) + (f" ({awaiting} new)" if awaiting else ""),
+                  "listings": "📦 " + t("My listings", lang), "add": "➕ " + t("Add a listing", lang)}
+section = st.radio("section", list(SECTION_LABELS), format_func=SECTION_LABELS.get, horizontal=True,
+                   key="shop_section", label_visibility="collapsed")
 
 STATUS_TEXT = {"placed": "New - waiting for you", "confirmed": "Confirmed", "ready": "Ready for pickup/delivery",
                "delivered": "Delivered", "cancelled": "Cancelled", "rejected": "Rejected"}
@@ -32,14 +33,14 @@ def move(order_id: int, new_status: str, reason: str = "") -> None:
 
 
 # ── Orders ──────────────────────────────────────────────────────────────────
-with orders_tab:
+if section == "orders":
     orders = market.list_orders_for_farmer(farmer["id"])
     if not orders:
         st.info(t("No orders yet. Once you list produce, buyers' orders appear here.", lang))
     for o in orders:
         oid = o["id"]
         header = f"#{oid} · {md_escape(o['consumer_name'])} · ₹{o['total_amount']:,.2f} · {t(STATUS_TEXT[o['status']], lang)}"
-        with st.expander(header, expanded=(o["status"] == "placed")):
+        with st.expander(header, expanded=o["status"] in ("placed", "confirmed", "ready")):
             for item in market.order_items(account_id, oid):
                 st.markdown(f"- {md_escape(item['title'])} — {item['quantity']:g} {item['unit']} × ₹{item['unit_price']:g}")
             st.markdown(f"**{t('Buyer wants', lang)}:** {t('pickup' if o['fulfilment'] == 'pickup' else 'delivery', lang)}")
@@ -99,7 +100,7 @@ def coop_label(cid) -> str:
     return t("Not in a cooperative", lang) if cid is None else coop_names[cid]
 
 
-with listings_tab:
+if section == "listings":
     rows = market.list_listings(farmer_id=farmer["id"], include_unavailable=True)
     if not rows:
         st.info(t("You haven't listed anything yet. Use the 'Add a listing' tab.", lang))
@@ -133,7 +134,7 @@ with listings_tab:
                         st.error(t(str(exc), lang))
 
 # ── Add listing ─────────────────────────────────────────────────────────────
-with add_tab:
+if section == "add":
     with st.form("new_listing", clear_on_submit=True):
         title = st.text_input(t("Product name", lang), placeholder=t("e.g. Desi tomato", lang), key="nl_title")
         c1, c2, c3, c4 = st.columns(4)

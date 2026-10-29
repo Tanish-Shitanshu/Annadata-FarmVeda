@@ -66,19 +66,26 @@ def test_advisory_accept_creates_reminder_and_logs_decision(tmp_db, farmer_id):
     assert not at.exception and not tmp_db.list_reminders(farmer_id)
     at = click(at, "Get Advisory")
     assert not at.exception
-    assert labels(at).count("Add to reminders") == 4          # sowing, irrigation, spraying, harvest
+    assert labels(at).count("Add to reminders") == 1          # only the open advisory (sowing) is shown
 
-    at = click(at, "Add to reminders")                         # first = sowing
+    at = click(at, "Add to reminders")
     assert not at.exception
     reminders = tmp_db.list_reminders(farmer_id)
     assert len(reminders) == 1 and reminders[0]["category"] == "Sowing"
     log = tmp_db.list_advice_log(farmer_id)
     assert len(log) == 1 and log[0]["decision"] == "accepted" and log[0]["kind"] == "sowing"
-    assert labels(at).count("Add to reminders") == 3           # that one is replaced by the outcome
+    assert labels(at).count("Add to reminders") == 0           # replaced by the outcome
     assert any("Added to your reminders" in s.value for s in at.success)
+    assert at.radio(key="wx_section").value == "sowing"        # and the page stays on the advisory just acted on
+
+    at.radio(key="wx_section").set_value("irrigation").run()   # the other advisories offer their own suggestions
+    assert labels(at).count("Add to reminders") == 1
+    at = click(at, "Add to reminders")
+    assert at.radio(key="wx_section").value == "irrigation"
+    assert {r["category"] for r in tmp_db.list_reminders(farmer_id)} == {"Sowing", "Irrigation"}
 
     at.run()                                                   # a plain rerun must not double-save
-    assert len(tmp_db.list_reminders(farmer_id)) == 1 and len(tmp_db.list_advice_log(farmer_id)) == 1
+    assert len(tmp_db.list_reminders(farmer_id)) == 2 and len(tmp_db.list_advice_log(farmer_id)) == 2
 
 
 def test_advisory_dismiss_logs_without_reminder(tmp_db, farmer_id):

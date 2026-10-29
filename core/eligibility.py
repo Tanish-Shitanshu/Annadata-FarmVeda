@@ -138,7 +138,7 @@ def _pm_kisan(s: Scheme, c: Context) -> SchemeResult:
         return SchemeResult(s, CHECK, "Tell us how you farm to check this.", missing=["land_ownership"])
     if own != "owner":
         return SchemeResult(s, UNLIKELY, "PM-KISAN pays landowning families.",
-                            [f"You said: {OWNERSHIP_LABELS[own].lower()}."],
+                            [f"You said: “{OWNERSHIP_LABELS[own]}”."],
                             ["If your family does hold land in the state records, correct your answer."])
     exclusions = c.get("pm_kisan_exclusions")
     if exclusions:
@@ -170,7 +170,7 @@ def _pmfby(s: Scheme, c: Context) -> SchemeResult:
         return SchemeResult(s, CHECK, "Tell us how you farm to check this.", missing=["land_ownership"])
     if not c.is_cultivator:
         return SchemeResult(s, UNLIKELY, "Crop insurance is for people who grow crops.",
-                            [f"You said: {OWNERSHIP_LABELS[c.ownership].lower()}."])
+                            [f"You said: “{OWNERSHIP_LABELS[c.ownership]}”."])
     crop_words = " ".join(c.crops).lower()
     commercial = any(w in crop_words for w in HORTICULTURE_OR_COMMERCIAL)
     reasons = ["You cultivate land, so you can insure your crop."]
@@ -196,7 +196,7 @@ def _kcc(s: Scheme, c: Context) -> SchemeResult:
         return SchemeResult(s, CHECK, "Tell us how you farm to check this.", missing=["land_ownership"])
     if c.is_cultivator:
         return SchemeResult(s, LIKELY, "Cultivators, including tenants and sharecroppers, can get a KCC.",
-                            [f"You said: {OWNERSHIP_LABELS[c.ownership].lower()}."],
+                            [f"You said: “{OWNERSHIP_LABELS[c.ownership]}”."],
                             ["Visit your bank branch or PACS with Aadhaar, land/tenancy proof and a photo."],
                             reminder=_remind("Visit the bank to apply for a Kisan Credit Card", c.today))
     if c.get("allied_activity") or c.get("group_member"):

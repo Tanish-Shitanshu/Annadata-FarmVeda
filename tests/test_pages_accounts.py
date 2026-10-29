@@ -149,3 +149,17 @@ def test_a_nonexistent_account_in_the_session_is_treated_as_signed_out():
     at.session_state["account_id"] = 987654
     at.run()
     assert any("sign in" in w.value.lower() for w in at.warning)
+
+
+def test_demo_seed_script_builds_a_working_world_and_refuses_to_run_twice(tmp_db):
+    import runpy
+    import pytest as _pytest
+    from core import market
+
+    script = os.path.join(ROOT, "scripts", "seed_demo.py")
+    runpy.run_path(script, run_name="__main__")
+    assert auth.login("asha@example.com", "demo-pass-123").role == "consumer"
+    assert auth.login("ravi@example.com", "demo-pass-123").role == "farmer"
+    assert len(market.list_listings()) >= 8
+    with _pytest.raises(SystemExit):
+        runpy.run_path(script, run_name="__main__")
