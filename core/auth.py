@@ -16,6 +16,7 @@ import hashlib
 import hmac
 import os
 import re
+import secrets
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -27,6 +28,7 @@ MIN_PASSWORD_LEN = 8
 MAX_PASSWORD_LEN = 128
 MAX_FAILED_ATTEMPTS = 5
 LOCK_MINUTES = 10
+SESSION_HOURS = 12
 
 _SCRYPT_N, _SCRYPT_R, _SCRYPT_P = 2 ** 14, 8, 1
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$")
@@ -165,6 +167,43 @@ def get_account(account_id: int) -> Account | None:
     return Account(**dict(row)) if row else None
 
 
+# ── Sessions (so a page refresh doesn't sign you out) ───────────────────────
+# The browser holds a random token; only its SHA-256 is stored, tokens expire, and they are revoked on
+# sign-out and on password change.
+
+def _token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def create_session(account_id: int) -> str:
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    with db.get_conn() as conn:
+        conn.execute("DELETE FROM auth_sessions WHERE expires_at < ?", (now.isoformat(),))
+        conn.execute("INSERT INTO auth_sessions (token_hash, account_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+                     (_token_hash(token), account_id, now.isoformat(),
+                      (now + timedelta(hours=SESSION_HOURS)).isoformat()))
+    return token
+
+
+def resolve_session(token: str | None) -> Account | None:
+    if not token or not isinstance(token, str) or len(token) > 200:
+        return None
+    with db.get_conn() as conn:
+        row = conn.execute(
+            """SELECT a.id, a.email, a.role, a.full_name, s.expires_at FROM auth_sessions s
+               JOIN accounts a ON a.id = s.account_id WHERE s.token_hash = ?""", (_token_hash(token),)).fetchone()
+    if row is None or datetime.fromisoformat(row["expires_at"]) < datetime.now(timezone.utc):
+        return None
+    return Account(id=row["id"], email=row["email"], role=row["role"], full_name=row["full_name"])
+
+
+def revoke_session(token: str | None) -> None:
+    if token:
+        with db.get_conn() as conn:
+            conn.execute("DELETE FROM auth_sessions WHERE token_hash = ?", (_token_hash(token),))
+
+
 def change_password(account_id: int, old_password: str, new_password: str) -> None:
     with db.get_conn() as conn:
         row = conn.execute("SELECT email, password_hash FROM accounts WHERE id = ?", (account_id,)).fetchone()
@@ -173,3 +212,4 @@ def change_password(account_id: int, old_password: str, new_password: str) -> No
         validate_password(new_password, row["email"])
         conn.execute("UPDATE accounts SET password_hash = ?, failed_attempts = 0, locked_until = NULL "
                      "WHERE id = ?", (hash_password(new_password), account_id))
+        conn.execute("DELETE FROM auth_sessions WHERE account_id = ?", (account_id,))   # sign out everywhere

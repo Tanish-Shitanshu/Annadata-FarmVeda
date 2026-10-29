@@ -4,6 +4,7 @@ import streamlit as st
 
 from core import db
 from core.i18n import t
+from core.safe import md_escape
 from core.state import init_session, require_farmer
 
 lang = init_session()
@@ -14,11 +15,27 @@ st.title("👤 " + t("Farmer Profile & Farm Records", lang))
 col1, col2 = st.columns(2)
 with col1:
     st.subheader(t("Profile", lang))
-    st.write(f"**{t('Name', lang)}:** {farmer['name']}")
-    st.write(f"**{t('Village', lang)}:** {farmer['village'] or '—'}")
-    st.write(f"**{t('State', lang)}:** {farmer['state'] or '—'}")
+    st.write(f"**{t('Name', lang)}:** {md_escape(farmer['name'])}")
+    st.write(f"**{t('Village', lang)}:** {md_escape(farmer['village'] or '—')}")
+    st.write(f"**{t('State', lang)}:** {md_escape(farmer['state'] or '—')}")
     st.write(f"**{t('Land Size', lang)}:** {farmer['land_size_acres']} acres")
-    st.write(f"**{t('Soil Type', lang)}:** {farmer['soil_type']}")
+    st.write(f"**{t('Soil Type', lang)}:** {md_escape(farmer['soil_type'])}")
+    with st.expander("✏️ " + t("Edit profile", lang)):
+        SOILS = ["Alluvial", "Black (Regur)", "Red", "Laterite", "Sandy", "Sandy Loam", "Clayey", "Loamy"]
+        with st.form("edit_profile"):
+            e_name = st.text_input(t("Full name", lang), value=farmer["name"], key="ep_name")
+            e_village = st.text_input(t("Village / Town", lang), value=farmer["village"] or "", key="ep_village")
+            e_state = st.text_input(t("State", lang), value=farmer["state"] or "", key="ep_state")
+            e_land = st.number_input(t("Land size (acres)", lang), min_value=0.0, step=0.5,
+                                     value=float(farmer["land_size_acres"] or 0), key="ep_land")
+            soils = SOILS if farmer["soil_type"] in SOILS else [farmer["soil_type"]] + SOILS
+            e_soil = st.selectbox(t("Soil type", lang), soils, index=soils.index(farmer["soil_type"]), key="ep_soil")
+            if st.form_submit_button(t("Save profile", lang), type="primary"):
+                try:
+                    db.update_farmer_profile(farmer["id"], e_name, e_village, e_state, e_land, e_soil)
+                    st.rerun()
+                except ValueError as exc:
+                    st.error(t(str(exc), lang))
 
 with col2:
     st.subheader(t("🔔 Reminders", lang))
@@ -27,7 +44,7 @@ with col2:
         st.caption(t("No pending reminders.", lang))
     for r in reminders:
         c1, c2 = st.columns([4, 1])
-        c1.markdown(f"**{r['title']}** — {r['due_date']} ({t(r['category'] or '', lang)})")
+        c1.markdown(f"**{md_escape(r['title'])}** — {r['due_date']} ({t(r['category'] or '', lang)})")
         if c2.button("✅", key=f"done_{r['id']}"):
             db.mark_reminder_done(r["id"])
             st.rerun()

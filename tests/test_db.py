@@ -68,3 +68,20 @@ def test_due_soon_count(tmp_db, farmer_id):
     tmp_db.add_reminder(farmer_id, "soon", (date.today() + timedelta(days=1)).isoformat(), "Other")
     tmp_db.add_reminder(farmer_id, "later", (date.today() + timedelta(days=30)).isoformat(), "Other")
     assert tmp_db.due_soon_count(farmer_id) == 1
+
+
+def test_update_farmer_profile_validates_and_keeps_account_name_in_step(tmp_db):
+    from conftest import new_farmer
+    acct, farmer = new_farmer("f@example.com", "Old Name")
+    tmp_db.update_farmer_profile(farmer["id"], " New Name ", "Nashik", "Maharashtra", 7.5, "Red")
+    row = tmp_db.get_farmer(farmer["id"])
+    assert (row["name"], row["village"], row["land_size_acres"], row["soil_type"]) == ("New Name", "Nashik", 7.5, "Red")
+    assert tmp_db.get_farmer_by_account(acct.id)["name"] == "New Name"
+    from core import auth
+    assert auth.get_account(acct.id).full_name == "New Name"
+    for bad in [dict(name=""), dict(name="x" * 81), dict(land_size_acres=-1), dict(land_size_acres="abc"),
+                dict(land_size_acres=float("nan")), dict(land_size_acres=10 ** 7), dict(soil_type=" ")]:
+        args = dict(name="Ok", village="V", state="S", land_size_acres=2, soil_type="Red"); args.update(bad)
+        with pytest.raises(ValueError):
+            tmp_db.update_farmer_profile(farmer["id"], **args)
+    assert tmp_db.get_farmer(farmer["id"])["name"] == "New Name"        # failed edits changed nothing

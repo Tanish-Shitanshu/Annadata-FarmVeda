@@ -8,11 +8,13 @@ Everything listed under *Features* is implemented and exercised by the automated
 
 | | |
 |---|---|
-| **Farmer dashboard** — new orders and scheme alerts at a glance<br>![Farmer dashboard](docs/screenshots/01-farmer-home.png) | **Marketplace** — browse, search and filter produce straight from farmers<br>![Marketplace](docs/screenshots/03-marketplace.png) |
+| **Sign in** — demo logins on screen, one-click demo accounts, or create your own<br>![Sign in](docs/screenshots/00-sign-in.png) | **Farmer dashboard** — new orders and scheme alerts at a glance<br>![Farmer dashboard](docs/screenshots/01-farmer-home.png) |
+| **Marketplace** — browse, search and filter produce straight from farmers<br>![Marketplace](docs/screenshots/03-marketplace.png) |
 | **Farmer's shop** — ratings and reviews from real orders<br>![Farmer shop](docs/screenshots/09-farmer-shop.png) | **Cooperative pooled stock** — one bulk order split across members<br>![Pooled stock](docs/screenshots/04-coop-pooled-stock.png) |
 | **Cart and checkout** — pay the farmer on pickup or delivery<br>![Cart](docs/screenshots/08-cart-checkout.png) | **My Orders** — status, messages and review in one place<br>![My orders](docs/screenshots/10-my-orders.png) |
 | **My Shop** — confirm, reject, deliver and record payment<br>![My Shop](docs/screenshots/05-my-shop-orders.png) | **Cooperatives** — invite code, roles and pooled stock<br>![Cooperatives](docs/screenshots/07-cooperatives.png) |
-| **Yojana Sathi** — schemes sorted by eligibility, with next steps<br>![Yojana Sathi](docs/screenshots/06-yojana-sathi.png) | **Works on a phone**<br><img src="docs/screenshots/11-mobile-marketplace.png" width="260" alt="Mobile marketplace"> |
+| **Yojana Sathi** — schemes sorted by eligibility, with next steps<br>![Yojana Sathi](docs/screenshots/06-yojana-sathi.png) | **Farmer profile** — editable details, reminders, farm records<br>![Farmer profile](docs/screenshots/12-farmer-profile.png) |
+| **Works on a phone**<br><img src="docs/screenshots/11-mobile-marketplace.png" width="260" alt="Mobile marketplace"> | |
 
 ## ✨ Features
 
@@ -27,8 +29,8 @@ Everything listed under *Features* is implemented and exercised by the automated
 | 🤖 **Fasal Guru (AI Chat)** | Real LLM-backed chat via Google Gemini. Needs your own `GEMINI_API_KEY` (free) — without one, the page explains that clearly instead of faking a response. Answers are grounded in the farmer's village, state, soil, land size, recent crops and (optionally) the live forecast — never their name — and come back in the farmer's chosen language. The model is configurable (`GEMINI_MODEL`) with a fallback chain, because Gemini model names get retired. |
 | 🏛️ **Yojana Sathi (Govt. Scheme Assistant)** | A real eligibility check, not a brochure. The farmer answers up to 8 questions (how they farm, land held on 1 Feb 2019, Aadhaar-linked bank account, PM-KISAN exclusions, KCC, livestock, group membership, planned investments); combined with land size, state, crops on record and cooperative membership, 10 schemes are sorted into **likely / check details / unlikely / not applicable**, each with the reasons, the next steps, documents needed, and an official source. Unanswered questions are never treated as "no". Suggested reminders (e.g. PM-KISAN registration, the next PMFBY cut-off) are accepted or dismissed by the farmer, and dismissals are remembered. Every scheme shows its official source and the date its rules were last checked. |
 | 📚 **Farmer Learning Hub** | 8 practical guides (crop rotation, IPM, drip irrigation, soil health, post-harvest storage, NPK, climate adaptation, seed treatment). |
-| 👤 **Farmer Profile & Farm Records** | Real local SQLite persistence — profile, land/soil details, farm records, and reminders. |
-| 🔐 **Accounts** | Email + password sign-up for **farmers** and **consumers**. Passwords are salted scrypt hashes; login errors don't reveal whether an email exists; 5 wrong passwords lock the account for 10 minutes. Your identity comes only from the signed-in account, never from anything the browser can edit. |
+| 👤 **Farmer Profile & Farm Records** | Real local SQLite persistence — profile (editable), land/soil details, farm records, and reminders. |
+| 🔐 **Accounts** | Email + password sign-up for **farmers** and **consumers**. Passwords are salted scrypt hashes; login errors don't reveal whether an email exists; 5 wrong passwords lock the account for 10 minutes. Your identity comes only from the signed-in account, never from anything the browser can edit. Sign-in survives a page refresh through a server-side session (only a hash of the token is stored; it expires after 12 hours and is revoked on sign-out or password change). Sign out returns you Home, every page has a **Back to Home** link, and you can change your password from the Home page. Anyone can browse the Marketplace without an account; a cart built while signed out follows a consumer into sign-in. |
 | 🧺 **My Shop** (farmer) | List produce with your own price and stock, mark it organic, pause or edit it, optionally list under a cooperative. Orders arrive here: confirm or reject (with a reason), mark ready, delivered or cancelled, record payment received, and message the buyer. The buyer's phone and address are shown only to the farmer on that order. |
 | 🛒 **Marketplace** (consumer) | Browse and search produce, filter by category/state, sort by price, open a farmer's shop with reviews, add to cart, and check out. Prices come from the database at checkout, stock is reserved atomically (two buyers can't both get the last kilo), and an order that can't be fully filled is not placed at all. One order is created per farmer. |
 | 📦 **My Orders** (consumer) | Track each order, cancel while it is still new, message the farmer, and leave one rating and review once it is delivered. Cancelled or rejected orders return their stock. |
@@ -69,7 +71,7 @@ pip install -r requirements.txt pytest
 pytest
 ```
 
-291 tests run with the network faked (canned Open-Meteo responses and a fake Gemini client), including in-process Streamlit runs that click the real buttons (`streamlit.testing`). They cover password hashing and lockout, sign-up/sign-in/sign-out, the page guards (signed out, wrong role, forged session ids), listings, atomic stock reservation and checkout, the order state machine and who may see what, cooperative pooling and bulk-order allocation, every scheme-eligibility rule, the accept/dismiss flows, and escaping of user-typed text. The page tests were checked by breaking the code on purpose and confirming they fail. The whole buy/sell journey (two farmers, a cooperative, a consumer, bulk order, confirm, reject, deliver, review) was also driven end to end in a real browser.
+313 tests run with the network faked (canned Open-Meteo responses and a fake Gemini client), including in-process Streamlit runs that click the real buttons (`streamlit.testing`). They cover password hashing and lockout, sign-up/sign-in/sign-out, refresh-proof sessions, change password, demo data, the page guards (signed out, wrong role, forged session ids), listings, atomic stock reservation and checkout, the order state machine and who may see what, cooperative pooling and bulk-order allocation, every scheme-eligibility rule, the accept/dismiss flows, and escaping of user-typed text. The page tests were checked by breaking the code on purpose and confirming they fail. The whole buy/sell journey (two farmers, a cooperative, a consumer, bulk order, confirm, reject, deliver, review) was also driven end to end in a real browser.
 
 ## Getting started
 
@@ -90,6 +92,8 @@ streamlit run app.py
 
 Farmer: `ravi@example.com` · Consumer: `asha@example.com` · password for every demo account: `demo-pass-123`.
 
+On a brand-new database the Home page offers a **Load demo data** button instead of the script; once the demo accounts exist it shows a **Try the demo** box with these logins and one-click *Sign in as demo farmer / consumer* buttons.
+
 Or start from scratch: create a **farmer** account and a **consumer** account (use two browser profiles or a private window) to try the whole selling flow: the farmer lists produce in My Shop, the consumer orders it from the Marketplace, and the farmer confirms it. `FARMVEDA_DB_PATH` changes where the database file lives. No API keys are required for anything except the AI chat page, which needs a (free) Gemini key. If chat reports that a model isn't found, set `GEMINI_MODEL` in `.env` to one your key can use.
 
 ## Project structure
@@ -98,7 +102,8 @@ Or start from scratch: create a **farmer** account and a **consumer** account (u
 app.py                        Home — sign in / create account, role dashboards
 core/
   db.py                       SQLite: accounts, farmers, farm_records, reminders, advice_log, listings, orders, cooperatives, reviews
-  auth.py                     Accounts: scrypt hashes, lockout, sign-up/sign-in
+  auth.py                     Accounts: scrypt hashes, lockout, sign-up/sign-in, server-side sessions
+  demo.py                     Demo world used by the seed script and the Try-the-demo box
   market.py                   Listings, cart pricing, atomic checkout, order state machine, messages, reviews
   coop.py                     Cooperatives, pooled stock, bulk-order allocation
   eligibility.py              Scheme-eligibility rules (likely / check / unlikely / n/a)

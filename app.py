@@ -1,12 +1,12 @@
 import streamlit as st
 
-from core import auth, coop, db, eligibility, market
+from core import auth, coop, db, demo, eligibility, market
 from core.i18n import language_selector_options, t
 from core.safe import md_escape
 from core.state import current_account, init_session, sign_in
 
 st.set_page_config(page_title="Annadata FarmVeda", page_icon="🌾", layout="wide")
-init_session()
+init_session(is_home=True)
 
 with st.sidebar:
     st.session_state.language = st.selectbox(
@@ -23,13 +23,44 @@ st.caption(t("Human-in-the-loop AI farming companion — advises, plans, and con
 SOIL_TYPES = ["Alluvial", "Black (Regur)", "Red", "Laterite", "Sandy", "Sandy Loam", "Clayey", "Loamy"]
 
 
+def sign_in_as(email: str) -> None:
+    sign_in(auth.login(email, demo.DEMO_PASSWORD))
+    st.rerun()
+
+
+def show_demo_box() -> None:
+    """Demo logins in plain sight, so a first-time visitor knows exactly what to type."""
+    with st.container(border=True):
+        if not demo.has_accounts():
+            st.markdown("**" + t("First time here?", lang) + "**")
+            st.caption(t("This is a fresh database. Load a small demo world (farmers, a cooperative, produce, orders) "
+                         "to click around, or create your own accounts below.", lang))
+            if st.button(t("Load demo data", lang), key="load_demo", type="primary"):
+                demo.load_demo()
+                st.rerun()
+        elif demo.demo_exists():
+            st.markdown("**" + t("Try the demo", lang) + "**")
+            st.caption(f"{t('Farmer', lang)}: `{demo.DEMO_FARMER_EMAIL}`  ·  {t('Consumer', lang)}: "
+                       f"`{demo.DEMO_CONSUMER_EMAIL}`  ·  {t('Password', lang)}: `{demo.DEMO_PASSWORD}`")
+            c1, c2, _ = st.columns([1, 1, 2])
+            try:
+                if c1.button(t("Sign in as demo farmer", lang), key="demo_farmer"):
+                    sign_in_as(demo.DEMO_FARMER_EMAIL)
+                if c2.button(t("Sign in as demo consumer", lang), key="demo_consumer"):
+                    sign_in_as(demo.DEMO_CONSUMER_EMAIL)
+            except auth.AuthError as exc:
+                st.error(t(str(exc), lang))
+
+
 def show_auth_forms() -> None:
     st.info(t("You can browse the Marketplace without an account. Sign in to order, or to use the farm tools.", lang))
+    st.page_link("pages/10_🛒_Marketplace.py", label=t("Browse the Marketplace", lang), icon="🛒")
+    show_demo_box()
     sign_in_tab, create_tab = st.tabs([t("Sign in", lang), t("Create account", lang)])
 
     with sign_in_tab:
         with st.form("sign_in"):
-            email = st.text_input(t("Email", lang), key="si_email")
+            email = st.text_input(t("Email (your login)", lang), key="si_email")
             password = st.text_input(t("Password", lang), type="password", key="si_password")
             if st.form_submit_button(t("Sign in", lang), type="primary"):
                 try:
@@ -95,6 +126,27 @@ def farmer_dashboard(farmer) -> None:
             st.success("🏛️ " + t(f"You may qualify for {len(new_likely)} scheme(s): {names}. Open Yojana Sathi to see what to do.", lang))
 
 
+def account_settings(account) -> None:
+    with st.expander("⚙️ " + t("Account", lang)):
+        st.caption(f"{md_escape(account.full_name)} · {md_escape(account.email)} · {t(account.role, lang)}")
+        with st.form("change_password"):
+            old = st.text_input(t("Current password", lang), type="password", key="cp_old")
+            new = st.text_input(t("New password (8+ characters)", lang), type="password", key="cp_new")
+            again = st.text_input(t("Confirm new password", lang), type="password", key="cp_again")
+            if st.form_submit_button(t("Change password", lang)):
+                if new != again:
+                    st.error(t("The two passwords don't match.", lang))
+                else:
+                    try:
+                        auth.change_password(account.id, old, new)
+                        auth.revoke_session(st.session_state.get("session_token"))
+                        st.session_state.session_token = auth.create_session(account.id)   # other devices are signed out
+                        st.query_params["s"] = st.session_state.session_token
+                        st.success(t("Password changed. Any other devices were signed out.", lang))
+                    except auth.AuthError as exc:
+                        st.error(t(str(exc), lang))
+
+
 def consumer_dashboard(account) -> None:
     st.subheader(t(f"Welcome, {account.full_name}", lang))
     orders = market.list_orders_for_consumer(account.id)
@@ -112,8 +164,10 @@ if account is None:
     show_auth_forms()
 elif account.role == "farmer":
     farmer_dashboard(db.get_farmer_by_account(account.id))
+    account_settings(account)
 else:
     consumer_dashboard(account)
+    account_settings(account)
 
 st.divider()
 st.subheader(t("What you can do", lang))
@@ -154,5 +208,5 @@ for i, (icon, name, desc) in enumerate(features):
 
 st.divider()
 st.caption(t(
-    "Not built yet: live mandi prices, online payments, donations, voice assistant, input-store locator, "
-    "push/SMS alerts — see 'Coming Soon' for what each needs.", lang))
+    "On the roadmap: live mandi prices, online payments, a voice assistant, an input-store locator and "
+    "SMS/push alerts — see 'Coming Soon'.", lang))

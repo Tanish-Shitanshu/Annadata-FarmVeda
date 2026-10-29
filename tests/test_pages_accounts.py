@@ -98,7 +98,7 @@ def test_sign_in_and_generic_error_and_sign_out():
     assert any(b.label == "Sign in" for b in at.button)             # back to the sign-in form
 
 
-def test_sign_out_clears_the_previous_users_data_for_the_next_user():
+def test_cart_built_while_signed_out_follows_a_consumer_in_but_never_one_person_to_the_next():
     new_consumer("a@example.com", "Asha"); new_consumer("b@example.com", "Ben")
     at = home()
     at.session_state["cart"] = {1: 2.0}
@@ -106,7 +106,23 @@ def test_sign_out_clears_the_previous_users_data_for_the_next_user():
     at.text_input(key="si_password").set_value("s3cure-pass")
     button(at, "Sign in").click()
     at.run()
-    assert at.session_state["cart"] == {}                            # a stale cart never carries into a new session
+    assert at.session_state["cart"] == {1: 2.0}                      # kept: it was built before signing in
+    button(at, "Sign out").click(); at.run()
+    assert at.session_state["cart"] == {}                            # emptied on sign-out
+    at.text_input(key="si_email").set_value("b@example.com")
+    at.text_input(key="si_password").set_value("s3cure-pass")
+    button(at, "Sign in").click(); at.run()
+    assert at.session_state["cart"] == {}                            # so Ben never inherits Asha's
+
+
+def test_a_farmer_signing_in_does_not_keep_an_anonymous_cart():
+    new_farmer("f@example.com", "Farmer")
+    at = home()
+    at.session_state["cart"] = {1: 2.0}
+    at.text_input(key="si_email").set_value("f@example.com")
+    at.text_input(key="si_password").set_value("s3cure-pass")
+    button(at, "Sign in").click(); at.run()
+    assert at.session_state["cart"] == {}
 
 
 @pytest.mark.parametrize("prefix", [1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13])
@@ -163,3 +179,100 @@ def test_demo_seed_script_builds_a_working_world_and_refuses_to_run_twice(tmp_db
     assert len(market.list_listings()) >= 8
     with _pytest.raises(SystemExit):
         runpy.run_path(script, run_name="__main__")
+
+
+# ── Refresh-proof login, demo box, account settings ─────────────────────────
+
+def test_a_refresh_with_a_valid_token_keeps_you_signed_in():
+    acct = new_consumer("asha@example.com", "Asha Verma")
+    at = home()
+    at.text_input(key="si_email").set_value("asha@example.com")
+    at.text_input(key="si_password").set_value("s3cure-pass")
+    button(at, "Sign in").click(); at.run()
+    token = at.session_state["session_token"]
+    assert at.query_params["s"] == [token] or at.query_params["s"] == token
+    refreshed = AppTest.from_file(APP, default_timeout=30)               # a brand-new Streamlit session = a refresh
+    refreshed.query_params["s"] = token
+    refreshed.run()
+    assert refreshed.session_state["account_id"] == acct.id
+    assert any(m.label == "Open orders" for m in refreshed.metric)
+
+
+@pytest.mark.parametrize("token", ["not-a-real-token", "' OR 1=1 --", "a" * 300])
+def test_a_bad_token_in_the_url_signs_nobody_in(token):
+    new_consumer("asha@example.com", "Asha Verma")
+    at = AppTest.from_file(APP, default_timeout=30)
+    at.query_params["s"] = token
+    at.run()
+    assert not at.exception and at.session_state["account_id"] is None
+    assert any(b.label == "Sign in" for b in at.button)
+
+
+def test_signing_out_revokes_the_token_so_the_old_url_stops_working():
+    new_consumer("asha@example.com", "Asha Verma")
+    at = home()
+    at.text_input(key="si_email").set_value("asha@example.com")
+    at.text_input(key="si_password").set_value("s3cure-pass")
+    button(at, "Sign in").click(); at.run()
+    token = at.session_state["session_token"]
+    button(at, "Sign out").click(); at.run()
+    replay = AppTest.from_file(APP, default_timeout=30)
+    replay.query_params["s"] = token
+    replay.run()
+    assert replay.session_state["account_id"] is None
+
+
+def test_a_token_cannot_be_used_to_become_someone_else_by_editing_session_state():
+    """The token decides who you are, nothing else does."""
+    a = new_consumer("a@example.com", "A"); b = new_consumer("b@example.com", "B")
+    token_for_a = auth.create_session(a.id)
+    at = AppTest.from_file(APP, default_timeout=30)
+    at.query_params["s"] = token_for_a
+    at.run()
+    assert at.session_state["account_id"] == a.id != b.id
+
+
+def test_empty_database_offers_to_load_demo_data_then_one_click_sign_in():
+    at = home()
+    assert any("Load demo data" == b.label for b in at.button)
+    button(at, "Load demo data").click(); at.run()
+    assert not at.exception and not any(b.label == "Load demo data" for b in at.button)
+    assert any("demo-pass-123" in c.value for c in at.caption)           # credentials are visible on screen
+    button(at, "Sign in as demo consumer").click(); at.run()
+    assert at.session_state["role"] == "consumer"
+    assert any(m.label == "Open orders" for m in at.metric)
+
+
+def test_demo_farmer_button_signs_in_the_farmer_with_data():
+    at = home()
+    button(at, "Load demo data").click(); at.run()
+    button(at, "Sign in as demo farmer").click(); at.run()
+    assert at.session_state["role"] == "farmer"
+    assert any(m.label == "New Orders" and m.value == "1" for m in at.metric)
+
+
+def test_demo_box_is_hidden_when_real_accounts_exist_without_the_demo_ones():
+    new_consumer("real.person@example.com", "Real Person")
+    at = home()
+    assert not any("demo" in b.label.lower() for b in at.button)
+    assert not any("demo-pass-123" in c.value for c in at.caption)
+
+
+def test_change_password_form_validates_and_signs_out_other_devices():
+    acct = new_consumer("asha@example.com", "Asha Verma")
+    at = home()
+    at.text_input(key="si_email").set_value("asha@example.com")
+    at.text_input(key="si_password").set_value("s3cure-pass")
+    button(at, "Sign in").click(); at.run()
+    other_device = auth.create_session(acct.id)
+    at.text_input(key="cp_old").set_value("wrong-pass")
+    at.text_input(key="cp_new").set_value("brand-new-pass")
+    at.text_input(key="cp_again").set_value("brand-new-pass")
+    button(at, "Change password").click(); at.run()
+    assert any("incorrect" in e.value for e in at.error)
+    at.text_input(key="cp_old").set_value("s3cure-pass")
+    button(at, "Change password").click(); at.run()
+    assert not at.error and any("Password changed" in s.value for s in at.success)
+    assert auth.resolve_session(other_device) is None                      # other devices are out
+    assert auth.resolve_session(at.session_state["session_token"]) is not None   # this one stays in
+    assert auth.login("asha@example.com", "brand-new-pass").id == acct.id

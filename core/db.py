@@ -77,6 +77,13 @@ CREATE TABLE IF NOT EXISTS accounts (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS auth_sessions (
+    token_hash TEXT PRIMARY KEY,
+    account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS cooperatives (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE COLLATE NOCASE,
@@ -246,6 +253,33 @@ def list_farmers() -> list[sqlite3.Row]:
 def get_farmer(farmer_id: int) -> sqlite3.Row | None:
     with get_conn() as conn:
         return conn.execute("SELECT * FROM farmers WHERE id = ?", (farmer_id,)).fetchone()
+
+
+def update_farmer_profile(farmer_id: int, name: str, village: str, state: str,
+                          land_size_acres: float, soil_type: str) -> None:
+    """Edit a farmer's own profile (the account's display name is kept in step). Raises ValueError with a
+    message that is safe to show."""
+    name, village, state = (name or "").strip(), (village or "").strip(), (state or "").strip()
+    if not name or len(name) > 80:
+        raise ValueError("Enter your name (up to 80 characters).")
+    if len(village) > 80 or len(state) > 80:
+        raise ValueError("Village and state can be at most 80 characters.")
+    try:
+        land = float(land_size_acres)
+    except (TypeError, ValueError):
+        raise ValueError("Enter a valid land size in acres.") from None
+    if not (0 <= land <= 100000):
+        raise ValueError("Enter a valid land size in acres.")
+    if not (soil_type or "").strip():
+        raise ValueError("Choose a soil type.")
+    with get_conn() as conn:
+        row = conn.execute("SELECT account_id FROM farmers WHERE id = ?", (farmer_id,)).fetchone()
+        if row is None:
+            raise ValueError("Farmer profile not found.")
+        conn.execute("UPDATE farmers SET name = ?, village = ?, state = ?, land_size_acres = ?, soil_type = ? "
+                     "WHERE id = ?", (name, village, state, land, soil_type.strip(), farmer_id))
+        if row["account_id"]:
+            conn.execute("UPDATE accounts SET full_name = ? WHERE id = ?", (name, row["account_id"]))
 
 
 def update_farmer_language(farmer_id: int, language: str) -> None:

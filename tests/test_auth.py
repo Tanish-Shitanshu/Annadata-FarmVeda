@@ -150,3 +150,43 @@ def test_scheme_profile_roundtrip_and_migration(tmp_path, monkeypatch):
     db.save_scheme_profile(1, {"land_ownership": "owner", "bank_aadhaar_linked": True})
     assert db.get_scheme_profile(1)["land_ownership"] == "owner"
     assert db.get_farmer_by_account(1) is None
+
+
+# ── Sessions (survive a page refresh) ───────────────────────────────────────
+
+def test_session_token_resolves_expires_and_is_stored_only_as_a_hash(tmp_db):
+    acct = auth.register("ravi@example.com", "s3cure-pass", "consumer", "Ravi")
+    token = auth.create_session(acct.id)
+    assert auth.resolve_session(token) == acct
+    with db.get_conn() as conn:
+        stored = [r["token_hash"] for r in conn.execute("SELECT token_hash FROM auth_sessions")]
+    assert stored and token not in stored[0] and len(stored[0]) == 64
+    with db.get_conn() as conn:
+        conn.execute("UPDATE auth_sessions SET expires_at = ?",
+                     ((datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat(),))
+    assert auth.resolve_session(token) is None
+
+
+@pytest.mark.parametrize("token", [None, "", "x", "a" * 500, "' OR 1=1 --", 12345])
+def test_garbage_tokens_resolve_to_nothing(tmp_db, token):
+    auth.register("ravi@example.com", "s3cure-pass", "consumer", "Ravi")
+    assert auth.resolve_session(token) is None
+
+
+def test_revoke_and_password_change_kill_sessions(tmp_db):
+    acct = auth.register("ravi@example.com", "s3cure-pass", "consumer", "Ravi")
+    t1, t2 = auth.create_session(acct.id), auth.create_session(acct.id)
+    auth.revoke_session(t1)
+    assert auth.resolve_session(t1) is None and auth.resolve_session(t2) == acct
+    auth.change_password(acct.id, "s3cure-pass", "an0ther-pass!")
+    assert auth.resolve_session(t2) is None
+
+
+def test_expired_sessions_are_purged_when_new_ones_are_made(tmp_db):
+    acct = auth.register("ravi@example.com", "s3cure-pass", "consumer", "Ravi")
+    auth.create_session(acct.id)
+    with db.get_conn() as conn:
+        conn.execute("UPDATE auth_sessions SET expires_at = '2000-01-01T00:00:00+00:00'")
+    auth.create_session(acct.id)
+    with db.get_conn() as conn:
+        assert conn.execute("SELECT COUNT(*) AS n FROM auth_sessions").fetchone()["n"] == 1

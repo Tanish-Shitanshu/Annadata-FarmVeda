@@ -180,7 +180,7 @@ def test_profile_shows_advice_history_and_sowing_category(tmp_db, farmer_id):
     at = open_page(8, farmer_id)
     assert not at.exception
     assert "Hold off" in md(at) and "dismissed" in md(at)
-    assert "Sowing" in at.selectbox[0].options
+    assert any("Sowing" in s.options for s in at.selectbox)
 
 
 def test_scanner_page_loads(tmp_db, farmer_id):
@@ -190,3 +190,17 @@ def test_scanner_page_loads(tmp_db, farmer_id):
 @pytest.mark.parametrize("n", [6, 7, 11, 12, 14])
 def test_other_pages_load(tmp_db, farmer_id, n):
     assert not open_page(n, farmer_id).exception
+
+
+def test_profile_page_edit_saves_and_rejects_bad_input(tmp_db, farmer_id):
+    at = open_page(8, farmer_id)
+    assert at.text_input(key="ep_name").value == "Test Farmer"
+    at.text_input(key="ep_name").set_value("Renamed Farmer")
+    at.number_input(key="ep_land").set_value(9.5)
+    at.selectbox(key="ep_soil").select("Red")
+    click(at, "Save profile")
+    row = tmp_db.get_farmer(farmer_id)
+    assert (row["name"], row["land_size_acres"], row["soil_type"]) == ("Renamed Farmer", 9.5, "Red")
+    at.text_input(key="ep_name").set_value("   ")
+    at = click(at, "Save profile")
+    assert at.error and tmp_db.get_farmer(farmer_id)["name"] == "Renamed Farmer"
