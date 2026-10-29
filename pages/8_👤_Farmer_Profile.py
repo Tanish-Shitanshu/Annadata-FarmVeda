@@ -37,7 +37,7 @@ with col2:
         title = st.text_input(t("What", lang), placeholder=t("e.g. Irrigate wheat field", lang))
         due = st.date_input(t("Due date", lang), value=date.today())
         category = st.selectbox(t("Category", lang),
-                                 ["Sowing", "Irrigation", "Spraying", "Fertilizer", "Harvest", "Other"])
+                                 ["Sowing", "Irrigation", "Spraying", "Fertilizer", "Harvest", "Schemes", "Other"])
         if st.form_submit_button(t("Add", lang)) and title:
             db.add_reminder(farmer["id"], title, due.isoformat(), category)
             st.rerun()

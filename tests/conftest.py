@@ -107,4 +107,29 @@ def tmp_db(tmp_path, monkeypatch):
 
 @pytest.fixture
 def farmer_id(tmp_db):
-    return tmp_db.create_farmer("Test Farmer", "Jaipur", "Rajasthan", 4.0, "Sandy Loam", "English")
+    """A farmer profile that belongs to a real account (so pages can sign in as them)."""
+    _acct, farmer = new_farmer("test.farmer@example.com", "Test Farmer", "Rajasthan", "Jaipur", 4.0, "Sandy Loam")
+    return farmer["id"]
+
+
+# ── People helpers (use inside tests that take the tmp_db fixture) ──────────
+
+def new_farmer(email="farmer@example.com", name="Ravi Kumar", state="Punjab", village="Khanna",
+               land=3.0, soil="Alluvial"):
+    """Create a farmer account + profile. Returns (account, farmer_row)."""
+    from core import auth
+    acct = auth.register(email, "s3cure-pass", "farmer", name,
+                         {"village": village, "state": state, "land_size_acres": land, "soil_type": soil})
+    return acct, db.get_farmer_by_account(acct.id)
+
+
+def new_consumer(email="buyer@example.com", name="Asha Verma"):
+    from core import auth
+    return auth.register(email, "s3cure-pass", "consumer", name)
+
+
+@pytest.fixture(autouse=True)
+def fast_password_hashing(monkeypatch):
+    """scrypt is deliberately slow; use the cheapest parameters in tests."""
+    from core import auth
+    monkeypatch.setattr(auth, "_SCRYPT_N", 2 ** 4)

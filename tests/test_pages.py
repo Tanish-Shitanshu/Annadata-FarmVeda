@@ -26,8 +26,10 @@ def fresh_caches(net):
 
 
 def open_page(prefix, farmer_id):
+    """Open a page signed in as the farmer that owns `farmer_id`."""
+    from core import db
     at = AppTest.from_file(page(prefix), default_timeout=TIMEOUT)
-    at.session_state["farmer_id"] = farmer_id
+    at.session_state["account_id"] = db.get_farmer(farmer_id)["account_id"]
     at.session_state["language"] = "English"
     return at.run()
 
@@ -54,7 +56,7 @@ def test_home_page_renders(tmp_db):
 
 def test_pages_ask_for_a_profile_when_none_selected(tmp_db):
     at = AppTest.from_file(page(2), default_timeout=TIMEOUT).run()
-    assert not at.exception and any("profile" in w.value.lower() for w in at.warning)
+    assert not at.exception and any("sign in" in w.value.lower() for w in at.warning)
 
 
 # ── Weather advisory + human-in-the-loop ────────────────────────────────────
@@ -178,6 +180,6 @@ def test_scanner_page_loads(tmp_db, farmer_id):
     assert not open_page(4, farmer_id).exception
 
 
-@pytest.mark.parametrize("n", [6, 7, 9])
+@pytest.mark.parametrize("n", [6, 7, 11, 12, 14])
 def test_other_pages_load(tmp_db, farmer_id, n):
     assert not open_page(n, farmer_id).exception
