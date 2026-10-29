@@ -37,7 +37,7 @@ with col2:
         title = st.text_input(t("What", lang), placeholder=t("e.g. Irrigate wheat field", lang))
         due = st.date_input(t("Due date", lang), value=date.today())
         category = st.selectbox(t("Category", lang),
-                                 ["Irrigation", "Spraying", "Fertilizer", "Harvest", "Other"])
+                                 ["Sowing", "Irrigation", "Spraying", "Fertilizer", "Harvest", "Other"])
         if st.form_submit_button(t("Add", lang)) and title:
             db.add_reminder(farmer["id"], title, due.isoformat(), category)
             st.rerun()
@@ -65,3 +65,16 @@ with st.form("new_record", clear_on_submit=True):
     if st.form_submit_button(t("Add Record", lang)) and crop:
         db.add_farm_record(farmer["id"], crop, season, sown_on.isoformat(), notes)
         st.rerun()
+
+st.divider()
+st.subheader(t("🧭 Advice history", lang))
+st.caption(t("Every suggestion FarmVeda showed you and what you decided. The app never acts on its own.", lang))
+
+log = db.list_advice_log(farmer["id"], limit=20)
+if not log:
+    st.caption(t("No advice decisions yet. Try the Weather Advisory page.", lang))
+for entry in log:
+    icon = "✅" if entry["decision"] == "accepted" else "✖️"
+    when = entry["created_at"][:10]
+    st.markdown(f"{icon} **{t(entry['kind'].title(), lang)}** — {t(entry['verdict'], lang)} "
+                f"({entry['location'] or '—'}, {when}) · {t(entry['decision'], lang)}")

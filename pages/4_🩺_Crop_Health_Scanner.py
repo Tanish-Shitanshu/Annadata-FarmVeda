@@ -1,5 +1,7 @@
 import streamlit as st
 
+from PIL import UnidentifiedImageError
+
 from core.health_scanner import analyze_image
 from core.i18n import t
 from core.state import init_session, require_farmer
@@ -20,8 +22,12 @@ if uploaded:
         st.image(uploaded, caption=t("Uploaded photo", lang), use_container_width=True)
 
     with col2:
-        with st.spinner(t("Analyzing image...", lang)):
-            result = analyze_image(uploaded.getvalue())
+        try:
+            with st.spinner(t("Analyzing image...", lang)):
+                result = analyze_image(uploaded.getvalue())
+        except (UnidentifiedImageError, OSError):
+            st.error(t("That file couldn't be read as a photo. Please upload a JPG or PNG image.", lang))
+            st.stop()
 
         color = {"Healthy": "green", "Possible Nutrient Deficiency": "orange",
                  "Possible Fungal or Pest Damage": "red", "Possible Water Stress": "orange",

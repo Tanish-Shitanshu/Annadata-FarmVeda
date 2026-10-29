@@ -52,6 +52,14 @@ def load_crop_profiles() -> list[CropProfile]:
     return profiles
 
 
+def get_profile(crop: str) -> CropProfile | None:
+    """Look up one crop's agronomic profile by name, or None if unknown."""
+    for profile in load_crop_profiles():
+        if profile.crop == crop:
+            return profile
+    return None
+
+
 def recommend_crops(soil_type: str, season: str, avg_temp_c: float,
                      seasonal_rainfall_mm: float, top_n: int = 5) -> list[Recommendation]:
     scored: list[Recommendation] = []

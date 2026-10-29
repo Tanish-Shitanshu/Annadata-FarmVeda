@@ -14,6 +14,7 @@ import csv
 import os
 from dataclasses import dataclass
 
+from core.crop_recommender import CropProfile
 from core.weather import ForecastResult
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "crop_yield_price_reference.csv")
@@ -21,7 +22,10 @@ DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "crop_yield_pr
 HEATWAVE_TEMP_C = 40.0
 FROST_TEMP_C = 4.0
 HEAVY_RAIN_MM = 30.0
-DROUGHT_RAIN_MM_PER_WEEK = 5.0
+DRY_SPELL_RAIN_MM_PER_WEEK = 5.0
+HEAT_MARGIN_C = 5.0        # heat stress this far above a crop's upper ideal temperature
+COLD_MARGIN_C = 6.0        # cold stress this far below a crop's lower ideal temperature
+WATER_GAP_FRACTION = 0.6   # seasonal rainfall under 60% of the crop's minimum need
 
 
 @dataclass
@@ -58,19 +62,36 @@ def _load_reference() -> dict[str, tuple[float, float]]:
     return table
 
 
-def assess_climate_risk(forecast: ForecastResult) -> ClimateRisk:
+def assess_climate_risk(forecast: ForecastResult, crop: CropProfile | None = None,
+                        seasonal_rainfall_mm: float | None = None) -> ClimateRisk:
+    """Score weather stress over the forecast window.
+
+    With no `crop`, generic thresholds are used (heatwave >= 40°C, frost <= 4°C).
+    With a crop, thresholds come from that crop's own temperature range
+    (heat stress 5°C above its upper limit, cold stress 6°C below its lower
+    limit) - 38°C is routine for cotton but damaging for wheat. If a seasonal
+    rainfall figure is supplied it is compared with the crop's water need.
+
+    Still a heuristic: it reads one week of forecast, not crop stage, soil
+    moisture or variety.
+    """
     factors = []
     score = 0
 
-    heatwave_days = [d for d in forecast.days if d.temp_max_c >= HEATWAVE_TEMP_C]
-    if heatwave_days:
-        score += 30
-        factors.append(f"Heatwave risk: {len(heatwave_days)} day(s) >= {HEATWAVE_TEMP_C:.0f}°C")
+    heat_c = crop.max_temp_c + HEAT_MARGIN_C if crop else HEATWAVE_TEMP_C
+    cold_c = crop.min_temp_c - COLD_MARGIN_C if crop else FROST_TEMP_C
+    subject = f" for {crop.crop}" if crop else ""
 
-    frost_days = [d for d in forecast.days if d.temp_min_c <= FROST_TEMP_C]
-    if frost_days:
+    hot_days = [d for d in forecast.days if d.temp_max_c >= heat_c]
+    if hot_days:
         score += 30
-        factors.append(f"Frost risk: {len(frost_days)} day(s) <= {FROST_TEMP_C:.0f}°C")
+        factors.append(f"Heat stress{subject}: {len(hot_days)} day(s) >= {heat_c:.0f}°C")
+
+    cold_days = [d for d in forecast.days if d.temp_min_c <= cold_c]
+    if cold_days:
+        score += 30
+        label = "Frost risk" if cold_c <= 4 else "Cold stress"
+        factors.append(f"{label}{subject}: {len(cold_days)} night(s) <= {cold_c:.0f}°C")
 
     heavy_rain_days = [d for d in forecast.days if d.precipitation_mm >= HEAVY_RAIN_MM]
     if heavy_rain_days:
@@ -80,9 +101,17 @@ def assess_climate_risk(forecast: ForecastResult) -> ClimateRisk:
 
     total_rain = sum(d.precipitation_mm for d in forecast.days)
     weeks = max(len(forecast.days) / 7, 1)
-    if total_rain / weeks < DROUGHT_RAIN_MM_PER_WEEK:
-        score += 20
-        factors.append(f"Drought risk: only {total_rain:.0f}mm total over the forecast window")
+    if total_rain / weeks < DRY_SPELL_RAIN_MM_PER_WEEK:
+        score += 10
+        factors.append(f"Dry spell: only {total_rain:.0f}mm over the forecast window - "
+                        f"one dry week is not a drought, but check soil moisture")
+
+    if crop is not None and seasonal_rainfall_mm is not None:
+        need = crop.min_rainfall_mm
+        if seasonal_rainfall_mm < need * WATER_GAP_FRACTION:
+            score += 15
+            factors.append(f"Water gap: typical seasonal rainfall here (~{seasonal_rainfall_mm:.0f}mm) is well "
+                            f"below {crop.crop}'s ~{need:.0f}mm need - plan on irrigation")
 
     if not factors:
         factors.append("No major climate stress signals in the forecast window")

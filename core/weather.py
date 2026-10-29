@@ -23,6 +23,18 @@ class Location:
     country: str
     latitude: float
     longitude: float
+    admin1: str = ""  # state / region
+    admin2: str = ""  # district
+
+    @property
+    def label(self) -> str:
+        """Human-readable label that disambiguates same-named places."""
+        parts = [self.name, self.admin2, self.admin1, self.country]
+        seen: list[str] = []
+        for p in parts:
+            if p and p not in seen:
+                seen.append(p)
+        return ", ".join(seen)
 
 
 @dataclass
@@ -41,24 +53,49 @@ class ForecastResult:
     days: list[DayForecast] = field(default_factory=list)
 
 
-def geocode(place_name: str) -> Location | None:
-    """Resolve a place name (city/village/district) to coordinates."""
-    resp = requests.get(
-        GEOCODE_URL,
-        params={"name": place_name, "count": 1, "language": "en", "format": "json"},
-        timeout=TIMEOUT_SECONDS,
-    )
+def _search_places(place_name: str, count: int, country_code: str | None) -> list[dict]:
+    params = {"name": place_name, "count": count, "language": "en", "format": "json"}
+    if country_code:
+        params["countryCode"] = country_code
+    resp = requests.get(GEOCODE_URL, params=params, timeout=TIMEOUT_SECONDS)
     resp.raise_for_status()
-    results = resp.json().get("results")
-    if not results:
-        return None
-    r = results[0]
-    return Location(
-        name=r.get("name", place_name),
-        country=r.get("country", ""),
-        latitude=r["latitude"],
-        longitude=r["longitude"],
-    )
+    return resp.json().get("results") or []
+
+
+def geocode_candidates(place_name: str, count: int = 5,
+                       country_code: str | None = "IN") -> list[Location]:
+    """Return up to `count` places matching `place_name`, India first.
+
+    Village and town names repeat across Indian states, so the caller should
+    let the farmer choose rather than silently taking the first hit. If nothing
+    matches inside `country_code`, the search is retried worldwide so a
+    legitimate non-Indian place still resolves.
+    """
+    place_name = place_name.strip()
+    if not place_name:
+        return []
+
+    results = _search_places(place_name, count, country_code)
+    if not results and country_code:
+        results = _search_places(place_name, count, None)
+
+    return [
+        Location(
+            name=r.get("name", place_name),
+            country=r.get("country", ""),
+            latitude=r["latitude"],
+            longitude=r["longitude"],
+            admin1=r.get("admin1", ""),
+            admin2=r.get("admin2", ""),
+        )
+        for r in results
+    ]
+
+
+def geocode(place_name: str) -> Location | None:
+    """Resolve a place name to its best match (first candidate), or None."""
+    candidates = geocode_candidates(place_name, count=1)
+    return candidates[0] if candidates else None
 
 
 def get_forecast(location: Location, days: int = 7) -> ForecastResult:
